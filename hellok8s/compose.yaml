@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mysql:8
+    volumes:
+      - "./.docker/db/data:/var/lib/mysql"
+    ports:
+      - "3306:3306"
+    networks:
+      - hellok8snet
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=hellok8s_db
+
+networks:
+  hellok8snet:
