@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Secret
+data:
+  database-root-password: cm9vdA==
+  database-name: aGVsbG9rOHNfZGI=
+  database-username: aGVsbG9rOHM=
+  database-password: ZDN2M2xvcHI=
+metadata:
+  name: mysql-secret
+  namespace: hellok8s
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: hellok8s
+  labels:
+    app: hellok8s
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi #1 GB
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hellok8s-mysql-svc
+  namespace: hellok8s
+  labels:
+    app: hellok8s
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: hellok8s
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: hellok8s
+  labels:
+    app: hellok8s
+spec:
+  selector:
+    matchLabels:
+      app: hellok8s
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hellok8s
+        tier: mysql
+    spec:
+      containers:
+        - image: mysql:8.0
+          name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-root-password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-name
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-password
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc

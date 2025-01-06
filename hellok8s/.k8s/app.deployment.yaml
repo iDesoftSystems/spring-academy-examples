@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Secret
+data:
+  database-url: amRiYzpteXNxbDovL2hlbGxvazhzLW15c3FsLXN2YzozMzA2L2hlbGxvazhzX2Ri
+metadata:
+  name: hellok8s-services-secret
+  namespace: hellok8s
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hellok8s
+  namespace: hellok8s
+spec:
+  rules:
+    - host: hellok8s-services.idesoft.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hellok8s-services-svc
+                port:
+                  number: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hellok8s-services-svc
+  namespace: hellok8s
+  labels:
+    app: hellok8s
+spec:
+  type: ClusterIP
+  selector:
+    app: hellok8s
+    tier: backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hellok8s-deployment
+  namespace: hellok8s
+  labels:
+    app: hellok8s
+spec:
+  selector:
+    matchLabels:
+      app: hellok8s
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: hellok8s
+        tier: backend
+    spec:
+      containers:
+        - name: hellok8s
+          image: localhost:32000/idesoft/hellok8s:0.2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hellok8s-services-secret
+                  key: database-url
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database-password
